@@ -32,7 +32,7 @@ environments:
   list:
     local:
       start: "npm run start:dev"
-      mutation: allow
+      mutation: ask
 
 network:
   vpn_required: false
@@ -57,7 +57,7 @@ backend:
 
 knowledge:
   dir: .qa/knowledge
-  docs: [README.md, AGENTS.md, .qa/how-to-test.md]
+  docs: [README.md, AGENTS.md, user-story/README.md, .qa/how-to-test.md]
   code_map: true
   code_use: locate
 
@@ -71,7 +71,8 @@ report:
 extensions: []
 
 rules:
-  - "Stories live in FE-react-boilerplate/user-story/. Follow the story's acceptance criteria first."
+  - "`.env` points at a shared cloud database, not a local one. Ask before any write to it, including db:migrate, db:deploy, db:seed, test:e2e and QA scenarios that change data."
+  - "Stories live in user-story/. Follow the story's acceptance criteria first."
   - "When a feature crosses several roles, ask the user for the accounts before testing."
   - "Exception for this repo only: .qa/ is committed and public on purpose (demo project). The git.local-only, git.qa-not-tracked and git.ignore warnings are expected. Do not run verify_setup.py --fix here: it adds .qa/ to .git/info/exclude."
   - "secrets.env, runs/pw-profile/ and knowledge/chunks.jsonl stay ignored through .qa/.gitignore. Never commit them."

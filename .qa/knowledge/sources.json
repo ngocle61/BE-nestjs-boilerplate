@@ -1,9 +1,9 @@
 {
  "AGENTS.md": {
-  "hash": "7cd8d5d8c170",
-  "words": 860,
+  "hash": "7c731323100d",
+  "words": 882,
   "chunks": 5,
-  "mtime": 1793585626.205647
+  "mtime": 1793592763.8381853
  },
  "README.md": {
   "hash": "3b9d25fc77de",
@@ -16,5 +16,11 @@
   "words": 73,
   "chunks": 1,
   "mtime": 1793587379.5776415
+ },
+ "user-story\\README.md": {
+  "hash": "0e0a7b0742ff",
+  "words": 648,
+  "chunks": 9,
+  "mtime": 1793592760.741179
  }
 }
