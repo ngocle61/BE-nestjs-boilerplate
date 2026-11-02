@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: nestjs-boilerplate-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nestjs_boilerplate
+      POSTGRES_PASSWORD: nestjs_boilerplate
+      POSTGRES_DB: nestjs_boilerplate
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nestjs_boilerplate -d nestjs_boilerplate']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

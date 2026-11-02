@@ -1,0 +1,10 @@
+export const OPENAPI_TITLE = 'NestJS Boilerplate API';
+export const OPENAPI_VERSION = '1.0.0';
+export const OPENAPI_DOCS_PATH = 'docs';
+export const OPENAPI_OUTPUT_FILE = 'openapi.json';
+export const OPENAPI_JSON_INDENT = 2;
+export const OPENAPI_SPEC_VERSION = '3.1.0';
+export const JSON_SCHEMA_TARGET = 'draft-2020-12';
+export const CONTROLLER_SUFFIX = 'Controller';
+export const DATE_SCHEMA_TYPE = 'date';
+export const DATE_TIME_FORMAT = 'date-time';

@@ -1,0 +1,14 @@
+import { HttpStatus } from '@nestjs/common';
+
+import { ERROR_CODES, ERROR_MESSAGE_KEYS } from '../../common/constants/error-codes.constants.js';
+import { ApiException } from '../../common/exceptions/api.exception.js';
+
+export class AiNotConfiguredException extends ApiException {
+  constructor() {
+    super(
+      HttpStatus.SERVICE_UNAVAILABLE,
+      ERROR_CODES.AI_NOT_CONFIGURED,
+      ERROR_MESSAGE_KEYS.AI_NOT_CONFIGURED,
+    );
+  }
+}

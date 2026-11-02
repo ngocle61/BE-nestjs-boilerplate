@@ -1,0 +1,232 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum InterventionStatus {
+  TO_SCHEDULE
+  AWAITING_CALLBACK
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TimeSlot {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+}
+
+enum NotificationAudience {
+  CLIENT
+  TECHNICIAN
+}
+
+enum NotificationTiming {
+  BEFORE_START
+  ON_DEPARTURE
+  AFTER_COMPLETION
+}
+
+enum TimeUnit {
+  HOURS
+  DAYS
+}
+
+enum ScheduledMessageStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+model User {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  avatarUrl    String?  @map("avatar_url")
+  role         Role     @default(VIEWER)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  refreshTokens         RefreshToken[]
+  assignedInterventions Intervention[]       @relation("InterventionTechnician")
+  createdInterventions  Intervention[]       @relation("InterventionCreator")
+  conversationMembers   ConversationMember[]
+  messages              Message[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Client {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  name        String
+  phone       String?
+  email       String?
+  addressLine String?  @map("address_line")
+  postalCode  String?  @map("postal_code")
+  city        String?
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  interventions Intervention[]
+
+  @@index([name])
+  @@map("clients")
+}
+
+model Intervention {
+  id               String             @id @default(uuid(7)) @db.Uuid
+  clientId         String             @map("client_id") @db.Uuid
+  technicianId     String?            @map("technician_id") @db.Uuid
+  createdById      String?            @map("created_by_id") @db.Uuid
+  type             String
+  status           InterventionStatus @default(TO_SCHEDULE)
+  startsAt         DateTime?          @map("starts_at") @db.Timestamptz(3)
+  durationMinutes  Int                @map("duration_minutes")
+  isUrgent         Boolean            @default(false) @map("is_urgent")
+  notes            String?
+  callbackAt       DateTime?          @map("callback_at") @db.Timestamptz(3)
+  preferredSlot    TimeSlot?          @map("preferred_slot")
+  callbackAttempts Int                @default(0) @map("callback_attempts")
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  client            Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  technician        User?              @relation("InterventionTechnician", fields: [technicianId], references: [id], onDelete: SetNull)
+  createdBy         User?              @relation("InterventionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  scheduledMessages ScheduledMessage[]
+  conversations     Conversation[]
+
+  @@index([technicianId, startsAt])
+  @@index([status])
+  @@map("interventions")
+}
+
+model NotificationRule {
+  id          String               @id @default(uuid(7)) @db.Uuid
+  name        String
+  channel     NotificationChannel
+  audience    NotificationAudience
+  timing      NotificationTiming
+  offsetValue Int                  @default(0) @map("offset_value")
+  offsetUnit  TimeUnit             @default(DAYS) @map("offset_unit")
+  sendAtHour  Int?                 @map("send_at_hour")
+  template    String
+  isEnabled   Boolean              @default(true) @map("is_enabled")
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  scheduledMessages ScheduledMessage[]
+
+  @@map("notification_rules")
+}
+
+model ScheduledMessage {
+  id             String                 @id @default(uuid(7)) @db.Uuid
+  ruleId         String?                @map("rule_id") @db.Uuid
+  interventionId String                 @map("intervention_id") @db.Uuid
+  channel        NotificationChannel
+  recipient      String
+  body           String
+  sendAt         DateTime               @map("send_at") @db.Timestamptz(3)
+  status         ScheduledMessageStatus @default(PENDING)
+  sentAt         DateTime?              @map("sent_at") @db.Timestamptz(3)
+  failureReason  String?                @map("failure_reason")
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  rule         NotificationRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
+  intervention Intervention      @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@index([status, sendAt])
+  @@index([interventionId])
+  @@map("scheduled_messages")
+}
+
+model Conversation {
+  id             String           @id @default(uuid(7)) @db.Uuid
+  type           ConversationType @default(DIRECT)
+  title          String?
+  interventionId String?          @map("intervention_id") @db.Uuid
+  lastMessageAt  DateTime?        @map("last_message_at") @db.Timestamptz(3)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  intervention Intervention?        @relation(fields: [interventionId], references: [id], onDelete: SetNull)
+  members      ConversationMember[]
+  messages     Message[]
+
+  @@index([lastMessageAt])
+  @@index([interventionId])
+  @@map("conversations")
+}
+
+model ConversationMember {
+  conversationId String    @map("conversation_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  joinedAt       DateTime  @default(now()) @map("joined_at") @db.Timestamptz(3)
+  lastReadAt     DateTime? @map("last_read_at") @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_members")
+}
+
+model Message {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  senderId       String?   @map("sender_id") @db.Uuid
+  body           String
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  editedAt       DateTime? @map("edited_at") @db.Timestamptz(3)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}

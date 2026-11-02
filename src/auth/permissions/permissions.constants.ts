@@ -1,0 +1,34 @@
+import {
+  ERROR_MESSAGE_KEYS,
+  type ErrorMessageKey,
+} from '../../common/constants/error-codes.constants.js';
+import { Role } from '../../generated/prisma/enums.js';
+
+export const PERMISSIONS = {
+  DASHBOARD_VIEW: 'dashboard:view',
+  CHAT_USE: 'chat:use',
+  CALENDAR_VIEW: 'calendar:view',
+  CALENDAR_MANAGE: 'calendar:manage',
+  USER_MANAGE: 'user:manage',
+} as const;
+
+export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
+  [Role.ADMIN]: Object.values(PERMISSIONS),
+  [Role.MEMBER]: [
+    PERMISSIONS.DASHBOARD_VIEW,
+    PERMISSIONS.CHAT_USE,
+    PERMISSIONS.CALENDAR_VIEW,
+    PERMISSIONS.CALENDAR_MANAGE,
+  ],
+  [Role.VIEWER]: [PERMISSIONS.DASHBOARD_VIEW, PERMISSIONS.CALENDAR_VIEW],
+};
+
+export const PERMISSION_FORBIDDEN_MESSAGE_KEYS: Record<Permission, ErrorMessageKey> = {
+  [PERMISSIONS.DASHBOARD_VIEW]: ERROR_MESSAGE_KEYS.FORBIDDEN_DASHBOARD_VIEW,
+  [PERMISSIONS.CHAT_USE]: ERROR_MESSAGE_KEYS.FORBIDDEN_CHAT_USE,
+  [PERMISSIONS.CALENDAR_VIEW]: ERROR_MESSAGE_KEYS.FORBIDDEN_CALENDAR_VIEW,
+  [PERMISSIONS.CALENDAR_MANAGE]: ERROR_MESSAGE_KEYS.FORBIDDEN_CALENDAR_MANAGE,
+  [PERMISSIONS.USER_MANAGE]: ERROR_MESSAGE_KEYS.FORBIDDEN_USER_MANAGE,
+};
