@@ -1,0 +1,4 @@
+# This repo tracks .qa/ on purpose (public demo project). These stay out:
+secrets.env
+runs/pw-profile/
+knowledge/chunks.jsonl

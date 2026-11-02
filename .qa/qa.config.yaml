@@ -1,0 +1,77 @@
+# .qa/qa.config.yaml - QA agent configuration for THIS project. No secret values here.
+version: 1
+
+project:
+  name: "BE-nestjs-boilerplate"
+  agent_name: "qa-agent"
+  kinds: [backend]
+  context_file: .qa/project-context.md
+  how_to_test: .qa/how-to-test.md
+  scratch_dir: .qa/runs
+  task_style: [acceptance-criteria]
+
+agent:
+  runtime: claude
+  ask_user_tool: AskUserQuestion
+
+task_source:
+  type: manual
+  auth:
+    method: none
+  id_pattern: "user-story/[\\w.-]+\\.md"
+  read_only: true
+
+workstreams:
+  frontend: { labels: ["FRONTEND"], title_prefixes: ["[FE]"] }
+  backend:  { labels: ["BACKEND"],  title_prefixes: ["[BE]"] }
+  unsupported: { labels: [], title_prefixes: [] }
+  module_from: ""
+
+environments:
+  default: local
+  list:
+    local:
+      start: "npm run start:dev"
+      mutation: allow
+
+network:
+  vpn_required: false
+  vpn_check_url: ""
+  notes: ""
+
+backend:
+  services:
+    api:
+      base_url: { local: "http://localhost:3001/api" }
+      swagger_url: { local: "http://localhost:3001/api/docs" }
+      versions: []
+  auth:
+    type: optional
+    header_name: Authorization
+    header_format: "Bearer {token}"
+    env_var: API_TOKEN
+    env_file: ".qa/secrets.env"
+  test_data:
+    sandbox: ""
+    marker: "QA <task id>"
+
+knowledge:
+  dir: .qa/knowledge
+  docs: [README.md, AGENTS.md, .qa/how-to-test.md]
+  code_map: true
+  code_use: locate
+
+report:
+  format: default
+  ascii_only: true
+  style: concise
+  language: en
+  screenshots_dir: ""
+
+extensions: []
+
+rules:
+  - "Stories live in FE-react-boilerplate/user-story/. Follow the story's acceptance criteria first."
+  - "When a feature crosses several roles, ask the user for the accounts before testing."
+  - "Exception for this repo only: .qa/ is committed and public on purpose (demo project). The git.local-only, git.qa-not-tracked and git.ignore warnings are expected. Do not run verify_setup.py --fix here: it adds .qa/ to .git/info/exclude."
+  - "secrets.env, runs/pw-profile/ and knowledge/chunks.jsonl stay ignored through .qa/.gitignore. Never commit them."

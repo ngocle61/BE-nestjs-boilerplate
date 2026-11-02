@@ -1,0 +1,20 @@
+{
+ "AGENTS.md": {
+  "hash": "7cd8d5d8c170",
+  "words": 860,
+  "chunks": 5,
+  "mtime": 1793585626.205647
+ },
+ "README.md": {
+  "hash": "2ce7e0123496",
+  "words": 706,
+  "chunks": 8,
+  "mtime": 1793585626.1946418
+ },
+ ".qa\\how-to-test.md": {
+  "hash": "97ec1cdc302c",
+  "words": 73,
+  "chunks": 1,
+  "mtime": 1793587379.5776415
+ }
+}
