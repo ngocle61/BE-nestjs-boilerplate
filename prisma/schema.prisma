@@ -30,34 +30,6 @@ enum TimeSlot {
   EVENING
 }
 
-enum NotificationChannel {
-  SMS
-  EMAIL
-}
-
-enum NotificationAudience {
-  CLIENT
-  TECHNICIAN
-}
-
-enum NotificationTiming {
-  BEFORE_START
-  ON_DEPARTURE
-  AFTER_COMPLETION
-}
-
-enum TimeUnit {
-  HOURS
-  DAYS
-}
-
-enum ScheduledMessageStatus {
-  PENDING
-  SENT
-  CANCELLED
-  FAILED
-}
-
 enum ConversationType {
   DIRECT
   GROUP
@@ -132,56 +104,14 @@ model Intervention {
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  client            Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  technician        User?              @relation("InterventionTechnician", fields: [technicianId], references: [id], onDelete: SetNull)
-  createdBy         User?              @relation("InterventionCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  scheduledMessages ScheduledMessage[]
-  conversations     Conversation[]
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  technician    User?          @relation("InterventionTechnician", fields: [technicianId], references: [id], onDelete: SetNull)
+  createdBy     User?          @relation("InterventionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  conversations Conversation[]
 
   @@index([technicianId, startsAt])
   @@index([status])
   @@map("interventions")
-}
-
-model NotificationRule {
-  id          String               @id @default(uuid(7)) @db.Uuid
-  name        String
-  channel     NotificationChannel
-  audience    NotificationAudience
-  timing      NotificationTiming
-  offsetValue Int                  @default(0) @map("offset_value")
-  offsetUnit  TimeUnit             @default(DAYS) @map("offset_unit")
-  sendAtHour  Int?                 @map("send_at_hour")
-  template    String
-  isEnabled   Boolean              @default(true) @map("is_enabled")
-  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  scheduledMessages ScheduledMessage[]
-
-  @@map("notification_rules")
-}
-
-model ScheduledMessage {
-  id             String                 @id @default(uuid(7)) @db.Uuid
-  ruleId         String?                @map("rule_id") @db.Uuid
-  interventionId String                 @map("intervention_id") @db.Uuid
-  channel        NotificationChannel
-  recipient      String
-  body           String
-  sendAt         DateTime               @map("send_at") @db.Timestamptz(3)
-  status         ScheduledMessageStatus @default(PENDING)
-  sentAt         DateTime?              @map("sent_at") @db.Timestamptz(3)
-  failureReason  String?                @map("failure_reason")
-  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  rule         NotificationRule? @relation(fields: [ruleId], references: [id], onDelete: SetNull)
-  intervention Intervention      @relation(fields: [interventionId], references: [id], onDelete: Cascade)
-
-  @@index([status, sendAt])
-  @@index([interventionId])
-  @@map("scheduled_messages")
 }
 
 model Conversation {

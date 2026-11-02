@@ -1,10 +1,10 @@
 # Codebase map (generated; use to LOCATE things and learn terms, not as the source of expected behavior)
 
-Root: BE-nestjs-boilerplate. Source files scanned: 131.
+Root: BE-nestjs-boilerplate. Source files scanned: 129.
 
 ## Main folders (files)
 - src/auth: 24
-- src/generated: 17
+- src/generated: 15
 - src/chat: 14
 - src/users: 13
 - src/common: 11

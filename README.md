@@ -1,6 +1,6 @@
 # BE NestJS Boilerplate
 
-NestJS 12 + PostgreSQL 18 backend for the React boilerplate in `../FE-react-boilerplate`. It implements the API contract the FE already calls and the data model for the calendar (clients, interventions, SMS/e-mail rules) and chat (conversations, messages).
+NestJS 12 + PostgreSQL 18 backend for the React boilerplate in `../FE-react-boilerplate`. It implements the API contract the FE already calls and the data model for the calendar (clients, interventions) and chat (conversations, messages).
 
 ## Setup
 

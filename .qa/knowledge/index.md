@@ -12,7 +12,7 @@ Map of ingested documents. Search for detail: `kb.py search "<topic>"`.
 ## .qa\how-to-test.md  (73 words, 1 chunks)
 - How to test: The user's words:   ok.
 
-## README.md  (1066 words, 9 chunks)
+## README.md  (1064 words, 9 chunks)
 - BE NestJS Boilerplate: NestJS 12 + PostgreSQL 18 backend for the React boilerplate in  ../FE react boilerplate .
 - BE NestJS Boilerplate > Setup: Use the PostgreSQL 18 server installed on your machine.
 - BE NestJS Boilerplate > API: Paths are relative to  /api .
