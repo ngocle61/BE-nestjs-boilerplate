@@ -47,18 +47,33 @@ The seed is idempotent (it upserts by fixed e-mail or id, so re-running it never
 
 ## API
 
-| Endpoint                   | Auth         | Request               | Response                                                |
-| :------------------------- | :----------- | :-------------------- | :------------------------------------------------------ |
-| `POST /auth/sign-in`       | Public       | `{ email, password }` | `{ accessToken, refreshToken, user }`                   |
-| `POST /auth/refresh-token` | Public       | `{ refreshToken }`    | `{ accessToken, refreshToken }`                         |
-| `POST /auth/sign-out`      | Bearer token | `{ refreshToken }`    | `204`                                                   |
-| `GET /users/me`            | Bearer token | —                     | `{ id, email, fullName, avatarUrl, role, permissions }` |
+Paths are relative to `/api`. Outside production, Swagger is at http://localhost:3001/api/docs, and [openapi.json](./openapi.json) holds the full contract.
+
+| Endpoint                     | Auth              | Request                                                                                                         | Response                                                |
+| :--------------------------- | :---------------- | :-------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------ |
+| `POST /auth/sign-in`         | Public            | `{ email, password }`                                                                                           | `{ accessToken, refreshToken, user }`                   |
+| `POST /auth/refresh-token`   | Public            | `{ refreshToken }`                                                                                              | `{ accessToken, refreshToken }`                         |
+| `POST /auth/sign-out`        | Bearer token      | `{ refreshToken }`                                                                                              | `204`                                                   |
+| `GET /users/me`              | Bearer token      | —                                                                                                               | `{ id, email, fullName, avatarUrl, role, permissions }` |
+| `GET /users/technicians`     | Bearer token      | —                                                                                                               | Active users, as summaries                              |
+| `GET /users`                 | `user:manage`     | Query: `page`, `pageSize`, `search`, `role`, `isActive`                                                         | `{ items, total, page, pageSize }`                      |
+| `POST /users`                | `user:manage`     | `{ email, fullName, password, role }`                                                                           | `201`, the user                                         |
+| `PATCH /users/:id`           | `user:manage`     | `{ fullName?, role?, isActive? }`                                                                               | The user                                                |
+| `GET /clients`               | `calendar:view`   | Query: `search`                                                                                                 | Clients                                                 |
+| `POST /clients`              | `calendar:manage` | `{ name, phone?, email?, addressLine?, postalCode?, city?, notes? }`                                            | `201`, the client                                       |
+| `GET /interventions`         | `calendar:view`   | Query: `from`, `to`, `technicianId`, `status`, `unscheduled`, `search`                                          | Interventions                                           |
+| `POST /interventions`        | `calendar:manage` | `{ clientId, type, technicianId?, startsAt?, durationMinutes, isUrgent?, notes?, callbackAt?, preferredSlot? }` | `201`, the intervention                                 |
+| `GET /interventions/:id`     | `calendar:view`   | —                                                                                                               | The intervention                                        |
+| `PATCH /interventions/:id`   | `calendar:manage` | The create fields, all optional, plus `status?`                                                                 | The intervention                                        |
+| `DELETE /interventions/:id`  | `calendar:manage` | —                                                                                                               | `204`                                                   |
+| `GET /chat/conversation`     | `chat:use`        | Query: `interventionId`                                                                                         | The conversation and its messages                       |
+| `POST /chat/messages/stream` | `chat:use`        | `{ content, interventionId? }`                                                                                  | Server-sent events                                      |
 
 Errors: `{ code, message, errors? }`, for example `401 { "code": "invalid_credentials" }` or `400 { "code": "validation_failed", "errors": { "email": ["Invalid email address"] } }`.
 
 ## AI chat
 
-`POST /chat/messages` forwards the conversation to any OpenAI-compatible chat completions API. Without `OPENAI_API_KEY` the app still starts and chat requests return `503 ai_not_configured`.
+`POST /chat/messages/stream` forwards the conversation to any OpenAI-compatible chat completions API and streams the reply as server-sent events: `start`, `delta`, then `done` or `error`. Without `OPENAI_API_KEY` the app still starts and chat requests return `503 ai_not_configured`.
 
 | Provider               | `OPENAI_API_KEY`                                         | `OPENAI_BASE_URL`                                          | `OPENAI_MODEL`     | `OPENAI_REASONING_EFFORT` |
 | :--------------------- | :------------------------------------------------------- | :--------------------------------------------------------- | :----------------- | :------------------------ |
@@ -74,19 +89,30 @@ Errors: `{ code, message, errors? }`, for example `401 { "code": "invalid_creden
 - Refresh tokens are random, stored only as SHA-256 hashes, rotated on every refresh and revoked on sign-out. Reusing a rotated token revokes every session of that user.
 - Every route requires a valid access token unless it is marked `@Public()`; `@RequirePermissions()` enforces the same role → permission policy as the FE.
 
+## CI/CD
+
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) runs on pull requests into `develop` or `main` and on pushes to them:
+
+- `verify`: formatting, `openapi.json` matches the code, `npm run verify`, and the Docker image builds.
+- `e2e`: applies the migrations to an empty PostgreSQL database, seeds it and runs `npm run test:e2e`.
+- `deploy`: after a push to `main` passes both, sends a `POST` to the `DEPLOY_HOOK_URL` repository secret: the deploy hook URL from your host. Without the secret the job only logs a notice. It does not run migrations, so run `npm run db:deploy` against production yourself.
+
+The error translation test reads `src/locale/errors` from the matching branch of [FE-react-boilerplate](https://github.com/ngocle61/FE-react-boilerplate) (the branch the change targets), and skips when those files are missing.
+
 ## Scripts
 
-| Script               | Description                           |
-| :------------------- | :------------------------------------ |
-| `npm run start:dev`  | Watch mode                            |
-| `npm run build`      | Compile to `dist/`                    |
-| `npm run start:prod` | Run the compiled build                |
-| `npm run typecheck`  | TypeScript 7 typecheck                |
-| `npm run lint`       | oxlint                                |
-| `npm run test`       | Unit tests                            |
-| `npm run test:e2e`   | End-to-end tests (needs the database) |
-| `npm run verify`     | Typecheck + lint + unit tests         |
-| `npm run db:migrate` | Create/apply migrations               |
-| `npm run db:deploy`  | Apply migrations in production        |
-| `npm run db:seed`    | Seed demo users and calendar data     |
-| `npm run db:studio`  | Browse the data in Prisma Studio      |
+| Script                     | Description                           |
+| :------------------------- | :------------------------------------ |
+| `npm run start:dev`        | Watch mode                            |
+| `npm run build`            | Compile to `dist/`                    |
+| `npm run start:prod`       | Run the compiled build                |
+| `npm run typecheck`        | TypeScript 7 typecheck                |
+| `npm run lint`             | oxlint                                |
+| `npm run test`             | Unit tests                            |
+| `npm run test:e2e`         | End-to-end tests (needs the database) |
+| `npm run verify`           | Typecheck + lint + unit tests         |
+| `npm run openapi:generate` | Rebuild and write `openapi.json`      |
+| `npm run db:migrate`       | Create/apply migrations               |
+| `npm run db:deploy`        | Apply migrations in production        |
+| `npm run db:seed`          | Seed demo users and calendar data     |
+| `npm run db:studio`        | Browse the data in Prisma Studio      |

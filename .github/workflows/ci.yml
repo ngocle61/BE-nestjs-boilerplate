@@ -1,0 +1,114 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: '0'
+  DATABASE_URL: postgresql://nestjs_boilerplate:nestjs_boilerplate@localhost:5432/nestjs_boilerplate?schema=public
+  JWT_ACCESS_SECRET: ci-only-not-a-real-secret-at-least-32-characters
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: BE-nestjs-boilerplate
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: BE-nestjs-boilerplate
+
+      # The error translation test reads ../FE-react-boilerplate/src/locale/errors, so the FE goes
+      # next to the BE, on the branch this change targets. The test skips when those files are missing.
+      - uses: actions/checkout@v7
+        with:
+          repository: ngocle61/FE-react-boilerplate
+          ref: ${{ github.base_ref || github.ref_name }}
+          path: FE-react-boilerplate
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: BE-nestjs-boilerplate/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run db:generate
+
+      - name: Formatting
+        run: npm run format:check
+
+      - name: openapi.json matches the code
+        run: npm run openapi:generate && git diff --exit-code -- openapi.json
+
+      - name: Typecheck, lint and unit tests
+        run: npm run verify
+
+      - name: Docker image builds
+        run: docker build --tag be-nestjs-boilerplate:ci .
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: nestjs_boilerplate
+          POSTGRES_PASSWORD: nestjs_boilerplate
+          POSTGRES_DB: nestjs_boilerplate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nestjs_boilerplate -d nestjs_boilerplate"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run db:generate
+
+      - name: Migrations apply to an empty database
+        run: npm run db:deploy
+
+      - run: npm run db:seed
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+
+  deploy:
+    needs: [verify, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DEPLOY_HOOK_URL: ${{ secrets.DEPLOY_HOOK_URL }}
+    steps:
+      - name: Trigger the host's deploy hook
+        if: env.DEPLOY_HOOK_URL != ''
+        run: curl --fail --silent --show-error --request POST "$DEPLOY_HOOK_URL"
+
+      - name: Report that no deploy hook is configured
+        if: env.DEPLOY_HOOK_URL == ''
+        run: echo "::notice::DEPLOY_HOOK_URL secret is not set, skipping deploy"
