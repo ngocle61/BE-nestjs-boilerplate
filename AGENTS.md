@@ -2,6 +2,8 @@
 
 NestJS 12 API for the React boilerplate in `../FE-react-boilerplate`. Run every command from the repository root. The code follows the structure and naming conventions of the official NestJS documentation.
 
+Stories to implement live in `user-story/`. When given one, follow the workflow in [user-story/README.md](./user-story/README.md): requirement, analyze, Figma when linked, implement, QA, result.
+
 ## Stack
 
 Node 24 · NestJS 12 (ESM, `nodenext`) · TypeScript 7 (`tsc`, with the TypeScript 6 API kept for the Nest CLI) · Prisma ORM 7 + `@prisma/adapter-pg` · PostgreSQL 18 · Zod 4 · argon2 · JWT access tokens + rotating refresh tokens · Vitest · oxlint
